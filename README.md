@@ -1,2 +1,2 @@
 # quotation
-High Performance Quotation 
+High Performance Quotation. 
