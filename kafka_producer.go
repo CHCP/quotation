@@ -60,8 +60,8 @@ func SendAsyncMessage() {
 	signal.Notify(signals, os.Interrupt)
 	doneCh := make(chan struct{})
 
-	//define msg buffer
-	inputMsg := config.InputMessage{
+	//define OHLC buffer
+	inputOHLC := config.InputOHLC{
 		S: "AUDCAD",
 		U: time.Now(),
 		C: 0.86181,
@@ -79,8 +79,8 @@ func SendAsyncMessage() {
 	go func() {
 		for {
 			//对每个发送的消息赋值
-			inputMsg.U = time.Now()
-			inputStr, _ := json.Marshal(inputMsg)
+			inputOHLC.U = time.Now()
+			inputStr, _ := json.Marshal(inputOHLC)
 			msg.Value = sarama.ByteEncoder(inputStr)
 			msg.Key = sarama.StringEncoder(strconv.Itoa(int(time.Now().Unix())))
 
@@ -115,8 +115,8 @@ func SendSyncMessage() {
 	}
 	defer producer.Close()
 
-	//define msg buffer
-	inputMsg := config.InputMessage{
+	//define OHLC buffer
+	inputOHLC := config.InputOHLC{
 		S: "AUDCAD",
 		U: time.Now(),
 		C: 0.86181,
@@ -133,8 +133,8 @@ func SendSyncMessage() {
 	timeBegin := time.Now().UnixNano()
 	for i := 0; i < 80000; i++ {
 		//对每个发送的消息赋值
-		inputMsg.U = time.Now()
-		inputStr, _ := json.Marshal(inputMsg)
+		inputOHLC.U = time.Now()
+		inputStr, _ := json.Marshal(inputOHLC)
 		msg.Value = sarama.ByteEncoder(inputStr)
 		msg.Key = sarama.StringEncoder(strconv.Itoa(int(time.Now().Unix())))
 

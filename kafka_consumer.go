@@ -55,16 +55,6 @@ func ReadMessage() {
 	signal.Notify(signals, os.Interrupt)
 	doneCh := make(chan struct{})
 
-	/*
-		//define msg buffer
-		outputMsg := config.OutputMessage{
-			S: "AUDCAD",
-			U: time.Now(),
-			C: 0.86181,
-			V: 1,
-		}
-	*/
-
 	// run goroutine to test
 	var succeed, errors int
 	timeBegin := time.Now().UnixNano()
@@ -73,7 +63,21 @@ func ReadMessage() {
 			select {
 			case <-partitionConsumer.Messages():
 				succeed++
-				//fmt.Printf("HPQ consumer message, KEY=%s, VALUE=%s, offset=%d.\n", msg.Key, msg.Value, msg.Offset)
+				/*
+					case msg := <-partitionConsumer.Messages():
+						succeed++
+						fmt.Printf("HPQ consumer message, KEY=%s, VALUE=%s, offset=%d.\n", msg.Key, msg.Value, msg.Offset)
+
+						//Calculate OutputOHLC
+						var outputOHLC config.OutputOHLC
+						json.Unmarshal([]byte(msg.Value), &outputOHLC)
+						outputOHLC.O = 1.31136
+						outputOHLC.H = 1.31262
+						outputOHLC.L = 1.31118
+						outputOHLC.T = "M1"
+						outputStr, _ := json.Marshal(outputOHLC)
+						fmt.Println("OutputOHLC:", string(outputStr))
+				*/
 			case err := <-partitionConsumer.Errors():
 				errors++
 				fmt.Println("HPQ consumer error:", err)
