@@ -23,17 +23,24 @@ func main() {
 	flag.StringVar(&config.Brokers, "brokers", "localhost:9092", "Connect to Kafka brokers.")
 	flag.StringVar(&config.Topic, "topic", "testtopic", "Kafka topic.")
 	flag.StringVar(&config.Group, "group", "", "Kafka group.")
+	var async bool
+	flag.BoolVar(&async, "async", true, "Run as async.")
 	flag.Parse()
 	if 0 == len(config.Brokers) || 0 == len(config.Topic) {
 		fmt.Println("Usage: kafka_producer -brokers host:port -topic topic -count count -interval interval")
 		os.Exit(1)
 	}
 
-	fmt.Printf("HPQ producer startup, brokers = %s, topic = %s.\n", config.Brokers, config.Topic)
-	SendAsyncMessage()
+	if async {
+		SendAsyncMessage()
+	} else {
+		SendSyncMessage()
+	}
 }
 
 func SendAsyncMessage() {
+	fmt.Printf("HPQ async producer startup, brokers = %s, topic = %s.\n", config.Brokers, config.Topic)
+
 	conf := sarama.NewConfig()
 	conf.Producer.RequiredAcks = sarama.WaitForAll
 	conf.Producer.Partitioner = sarama.NewRandomPartitioner
@@ -89,5 +96,53 @@ func SendAsyncMessage() {
 	}()
 	<-doneCh
 
-	fmt.Printf("HPQ Producer finished send succssful messages = %d, error messages = %d, duration = %dms.\n", succeed, errors, (time.Now().UnixNano()-timeBegin)/1e6)
+	fmt.Printf("HPQ async producer finished send succssful messages = %d, error messages = %d, duration = %dms.\n", succeed, errors, (time.Now().UnixNano()-timeBegin)/1e6)
+}
+
+func SendSyncMessage() {
+	fmt.Printf("HPQ sync producer startup, brokers = %s, topic = %s.\n", config.Brokers, config.Topic)
+
+	conf := sarama.NewConfig()
+	conf.Producer.Return.Successes = true
+
+	producer, err := sarama.NewSyncProducer([]string{config.Brokers}, conf)
+	if nil != err {
+		panic(err)
+	}
+	defer producer.Close()
+
+	//define msg buffer
+	inputMsg := config.InputMessage{
+		S: "AUDCAD",
+		U: time.Now(),
+		C: 0.86181,
+		V: 1,
+	}
+
+	//defien msg
+	msg := &sarama.ProducerMessage{
+		Topic: config.Topic,
+	}
+
+	// run goroutine to test
+	var succeed, errors int
+	timeBegin := time.Now().UnixNano()
+	for i := 0; i < 80000; i++ {
+		//对每个发送的消息赋值
+		inputMsg.U = time.Now()
+		inputStr, _ := json.Marshal(inputMsg)
+		msg.Value = sarama.StringEncoder(inputStr)
+		msg.Key = sarama.StringEncoder(strconv.Itoa(int(time.Now().Unix())))
+
+		if _, _, err := producer.SendMessage(msg); nil == err {
+			succeed++
+		} else {
+			errors++
+		}
+
+		//延迟100毫秒
+		//time.Sleep(100 * time.Millisecond)
+	}
+
+	fmt.Printf("HPQ sync producer finished send succssful messages = %d, error messages = %d, duration = %dms.\n", succeed, errors, (time.Now().UnixNano()-timeBegin)/1e6)
 }

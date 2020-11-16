@@ -1,7 +1,7 @@
 /*
 Function  : kafka_consumer.go
 Author	  : Gordon Wang
-Created At: 2020.11.14
+Created At: 2020.11.15
 */
 
 package main
