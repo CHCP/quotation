@@ -8,6 +8,7 @@ Thumbs.db
 vendor
 
 debug
+*debug*
 *.log
 *.zip
 *.test
