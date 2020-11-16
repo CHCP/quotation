@@ -19,10 +19,11 @@ import (
 	"github.com/Shopify/sarama"
 )
 
-func main() {
+func main1() {
 	flag.StringVar(&config.Brokers, "brokers", "localhost:9092", "Connect to Kafka brokers.")
 	flag.StringVar(&config.Topic, "topic", "testtopic", "Kafka topic.")
 	flag.StringVar(&config.Group, "group", "", "Kafka group.")
+	flag.IntVar(&config.Interval, "interval", 100, "Kafka send message interval.")
 	var async bool
 	flag.BoolVar(&async, "async", true, "Run as async.")
 	flag.Parse()
@@ -45,6 +46,9 @@ func SendAsyncMessage() {
 	conf.Producer.RequiredAcks = sarama.WaitForAll
 	conf.Producer.Partitioner = sarama.NewRandomPartitioner
 	conf.Producer.Retry.Max = 3
+	//设置后影响性能
+	//conf.Producer.Return.Successes = true
+	//conf.Producer.Return.Errors = true
 
 	producer, err := sarama.NewAsyncProducer([]string{config.Brokers}, conf)
 	if nil != err {
@@ -77,7 +81,7 @@ func SendAsyncMessage() {
 			//对每个发送的消息赋值
 			inputMsg.U = time.Now()
 			inputStr, _ := json.Marshal(inputMsg)
-			msg.Value = sarama.StringEncoder(inputStr)
+			msg.Value = sarama.ByteEncoder(inputStr)
 			msg.Key = sarama.StringEncoder(strconv.Itoa(int(time.Now().Unix())))
 
 			select {
@@ -85,18 +89,18 @@ func SendAsyncMessage() {
 				succeed++
 			case err := <-producer.Errors():
 				errors++
-				fmt.Println("HPQ producer error:", err)
+				fmt.Println("HPQ async producer error:", err)
 			case <-signals:
 				doneCh <- struct{}{}
 			}
 
-			//延迟100毫秒
-			//time.Sleep(100 * time.Millisecond)
+			//延迟Interval毫秒
+			time.Sleep(time.Duration(config.Interval) * time.Millisecond)
 		}
 	}()
 	<-doneCh
 
-	fmt.Printf("HPQ async producer finished send succssful messages = %d, error messages = %d, duration = %dms.\n", succeed, errors, (time.Now().UnixNano()-timeBegin)/1e6)
+	fmt.Printf("HPQ async producer send succssful messages = %d, error messages = %d, duration = %dms.\n", succeed, errors, (time.Now().UnixNano()-timeBegin)/1e6)
 }
 
 func SendSyncMessage() {
@@ -131,18 +135,19 @@ func SendSyncMessage() {
 		//对每个发送的消息赋值
 		inputMsg.U = time.Now()
 		inputStr, _ := json.Marshal(inputMsg)
-		msg.Value = sarama.StringEncoder(inputStr)
+		msg.Value = sarama.ByteEncoder(inputStr)
 		msg.Key = sarama.StringEncoder(strconv.Itoa(int(time.Now().Unix())))
 
 		if _, _, err := producer.SendMessage(msg); nil == err {
 			succeed++
 		} else {
 			errors++
+			fmt.Println("HPQ sync producer error:", err)
 		}
 
 		//延迟100毫秒
-		//time.Sleep(100 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
 
-	fmt.Printf("HPQ sync producer finished send succssful messages = %d, error messages = %d, duration = %dms.\n", succeed, errors, (time.Now().UnixNano()-timeBegin)/1e6)
+	fmt.Printf("HPQ sync producer send succssful messages = %d, error messages = %d, duration = %dms.\n", succeed, errors, (time.Now().UnixNano()-timeBegin)/1e6)
 }

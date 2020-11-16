@@ -13,12 +13,12 @@ Finally, I choose sarama to test.
 * go build -o kafka_consumer kafka_consumer.go
 
 ## 3、Producer Performance Test
-* Async Test Result: 80000 msg/Sec,CPU:60%
+* Async Test Result: 80000 msg/sec,CPU:60%
   ![Preivew](images/async.png)
 
   ![Preivew](images/async_cpu.png)
 
-* Sync Test Result: 1200 msg/Sec, CPU:10%
+* Sync Test Result: 1200 msg/sec, CPU:10%
 
   ![Preivew](images/sync.png)
 

@@ -1,5 +1,5 @@
 /*
-Function  : kafka_consumer.go
+Function  : kafka_producer.go
 Author	  : Gordon Wang
 Created At: 2020.11.15
 */
@@ -7,35 +7,82 @@ Created At: 2020.11.15
 package main
 
 import (
+	"flag"
+	"fmt"
 	"os"
-	"strings"
+	"os/signal"
+	"time"
+	"zerologix/quotation/config"
 
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
-	"github.com/labstack/gommon/log"
+	"github.com/Shopify/sarama"
 )
 
-func main1() {
-	//加载echo
-	e := echo.New()
-	e.HideBanner = true
-	e.Use(middleware.Recover())
-	//设置日志级别
-	e.Use(middleware.Logger())
-	e.Logger.SetPrefix("HPQ")
-	e.Logger.SetHeader("[Echo] [${level}] ${time_rfc3339_nano} [${prefix}] [${short_file}(line:${line})]:")
-	if debug := os.Getenv("TM_LOG_LEVEL"); strings.ToLower(debug) == "info" {
-		e.Logger.SetLevel(log.INFO)
-	} else if strings.ToLower(debug) == "warn" {
-		e.Logger.SetLevel(log.WARN)
-	} else if strings.ToLower(debug) == "error" {
-		e.Logger.SetLevel(log.ERROR)
-	} else {
-		e.Logger.SetLevel(log.DEBUG)
+func main() {
+	flag.StringVar(&config.Brokers, "brokers", "localhost:9092", "Connect to Kafka brokers.")
+	flag.StringVar(&config.Topic, "topic", "testtopic", "Kafka topic.")
+	flag.StringVar(&config.Group, "group", "", "Kafka group.")
+	flag.Parse()
+	if 0 == len(config.Brokers) || 0 == len(config.Topic) {
+		fmt.Println("Usage: kafka_consumer -brokers host:port -topic topic -count count -interval interval")
+		os.Exit(1)
 	}
 
-	// Connect Kafka
+	ReadMessage()
+}
 
-	e.Logger.Infof("HPQ consumer is startup.")
-	e.Logger.Fatal(e.Start(":6789"))
+func ReadMessage() {
+	fmt.Printf("HPQ consumer startup, brokers = %s, topic = %s.\n", config.Brokers, config.Topic)
+
+	conf := sarama.NewConfig()
+	conf.Consumer.Return.Errors = true
+	conf.Consumer.Offsets.Initial = sarama.OffsetNewest
+
+	//consumer
+	consumer, err := sarama.NewConsumer([]string{config.Brokers}, conf)
+	if nil != err {
+		panic(err)
+	}
+	defer consumer.Close()
+
+	//partitionConsumer
+	partitionConsumer, err := consumer.ConsumePartition(config.Topic, 0, sarama.OffsetNewest)
+	if nil != err {
+		panic(err)
+	}
+	defer partitionConsumer.Close()
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt)
+	doneCh := make(chan struct{})
+
+	/*
+		//define msg buffer
+		outputMsg := config.OutputMessage{
+			S: "AUDCAD",
+			U: time.Now(),
+			C: 0.86181,
+			V: 1,
+		}
+	*/
+
+	// run goroutine to test
+	var succeed, errors int
+	timeBegin := time.Now().UnixNano()
+	go func() {
+		for {
+			select {
+			case <-partitionConsumer.Messages():
+				succeed++
+				//fmt.Printf("HPQ consumer message, KEY=%s, VALUE=%s, offset=%d.\n", msg.Key, msg.Value, msg.Offset)
+			case err := <-partitionConsumer.Errors():
+				errors++
+				fmt.Println("HPQ consumer error:", err)
+			case <-signals:
+				doneCh <- struct{}{}
+			}
+		}
+	}()
+	<-doneCh
+
+	fmt.Printf("HPQ consumer read succssful messages = %d, error messages = %d, duration = %dms.\n", succeed, errors, (time.Now().UnixNano()-timeBegin)/1e6)
 }
