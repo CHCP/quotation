@@ -22,7 +22,7 @@ import (
 func main() {
 	//Command line parameters
 	flag.StringVar(&config.Brokers, "brokers", "localhost:9092", "Connect to Kafka brokers.")
-	flag.StringVar(&config.Topic, "topic", "testtopic", "Kafka topic.")
+	flag.StringVar(&config.Topic, "topic", "hpqtopic", "Kafka topic.")
 	flag.StringVar(&config.Group, "group", "", "Kafka group.")
 	flag.IntVar(&config.Interval, "interval", 100, "Kafka send message interval ms.")
 	var async bool
