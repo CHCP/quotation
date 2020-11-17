@@ -19,7 +19,7 @@ import (
 	"github.com/Shopify/sarama"
 )
 
-func main1() {
+func main() {
 	//Command line parameters
 	flag.StringVar(&config.Brokers, "brokers", "localhost:9092", "Connect to Kafka brokers.")
 	flag.StringVar(&config.Topic, "topic", "testtopic", "Kafka topic.")
