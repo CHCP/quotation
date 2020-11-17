@@ -19,7 +19,8 @@ import (
 	"github.com/Shopify/sarama"
 )
 
-func main() {
+func main1() {
+	//Command line parameters
 	flag.StringVar(&config.Brokers, "brokers", "localhost:9092", "Connect to Kafka brokers.")
 	flag.StringVar(&config.Topic, "topic", "testtopic", "Kafka topic.")
 	flag.StringVar(&config.Group, "group", "", "Kafka group.")
@@ -32,6 +33,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	//Run as async or sync
 	if async {
 		SendAsyncMessage()
 	} else {
@@ -42,6 +44,7 @@ func main() {
 func SendAsyncMessage() {
 	fmt.Printf("HPQ async producer startup, brokers = %s, topic = %s.\n", config.Brokers, config.Topic)
 
+	//NewConfig
 	conf := sarama.NewConfig()
 	conf.Producer.RequiredAcks = sarama.WaitForAll
 	conf.Producer.Retry.Max = 3
@@ -51,12 +54,14 @@ func SendAsyncMessage() {
 	//conf.Producer.Return.Successes = true
 	//conf.Producer.Return.Errors = true
 
+	//NewProducer
 	producer, err := sarama.NewAsyncProducer([]string{config.Brokers}, conf)
 	if nil != err {
 		panic(err)
 	}
 	defer producer.AsyncClose()
 
+	//Define exit sigal
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 	doneCh := make(chan struct{})
@@ -69,7 +74,7 @@ func SendAsyncMessage() {
 		V: 1,
 	}
 
-	//defien msg
+	//define send msg
 	msg := &sarama.ProducerMessage{
 		Topic: config.Topic,
 	}
@@ -109,9 +114,11 @@ func SendAsyncMessage() {
 func SendSyncMessage() {
 	fmt.Printf("HPQ sync producer startup, brokers = %s, topic = %s.\n", config.Brokers, config.Topic)
 
+	//NewConfig
 	conf := sarama.NewConfig()
 	conf.Producer.Return.Successes = true
 
+	//NewProducer
 	producer, err := sarama.NewSyncProducer([]string{config.Brokers}, conf)
 	if nil != err {
 		panic(err)
@@ -126,7 +133,7 @@ func SendSyncMessage() {
 		V: 1,
 	}
 
-	//defien msg
+	//define send msg
 	msg := &sarama.ProducerMessage{
 		Topic: config.Topic,
 	}

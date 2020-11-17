@@ -35,3 +35,16 @@ type OutputOHLC struct {
 	L float32   `json:"l,omitempty"`
 	T string    `json:"t,omitempty"`
 }
+
+type OHLC struct {
+	M1  OutputOHLC
+	M5  OutputOHLC
+	M15 OutputOHLC
+	M30 OutputOHLC
+	H1  OutputOHLC
+	H2  OutputOHLC
+	H4  OutputOHLC
+	D1  OutputOHLC
+	W1  OutputOHLC
+	MN  OutputOHLC
+}
