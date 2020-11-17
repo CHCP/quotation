@@ -19,16 +19,16 @@ import (
 	"github.com/Shopify/sarama"
 )
 
-func main1() {
+func main() {
 	flag.StringVar(&config.Brokers, "brokers", "localhost:9092", "Connect to Kafka brokers.")
 	flag.StringVar(&config.Topic, "topic", "testtopic", "Kafka topic.")
 	flag.StringVar(&config.Group, "group", "", "Kafka group.")
-	flag.IntVar(&config.Interval, "interval", 100, "Kafka send message interval.")
+	flag.IntVar(&config.Interval, "interval", 100, "Kafka send message interval ms.")
 	var async bool
 	flag.BoolVar(&async, "async", true, "Run as async.")
 	flag.Parse()
 	if 0 == len(config.Brokers) || 0 == len(config.Topic) {
-		fmt.Println("Usage: kafka_producer -brokers host:port -topic topic -count count -interval interval")
+		fmt.Println("Usage: kafka_producer -brokers host:port -topic topic -interval interval")
 		os.Exit(1)
 	}
 
@@ -44,8 +44,9 @@ func SendAsyncMessage() {
 
 	conf := sarama.NewConfig()
 	conf.Producer.RequiredAcks = sarama.WaitForAll
-	conf.Producer.Partitioner = sarama.NewRandomPartitioner
 	conf.Producer.Retry.Max = 3
+	//多个Partition不能设置为NewRandomPartitioner
+	//conf.Producer.Partitioner = sarama.NewRandomPartitioner
 	//设置后影响性能
 	//conf.Producer.Return.Successes = true
 	//conf.Producer.Return.Errors = true
@@ -95,7 +96,9 @@ func SendAsyncMessage() {
 			}
 
 			//延迟Interval毫秒
-			time.Sleep(time.Duration(config.Interval) * time.Millisecond)
+			if int(config.Interval) > 0 {
+				time.Sleep(time.Duration(config.Interval) * time.Millisecond)
+			}
 		}
 	}()
 	<-doneCh
@@ -145,8 +148,10 @@ func SendSyncMessage() {
 			fmt.Println("HPQ sync producer error:", err)
 		}
 
-		//延迟100毫秒
-		time.Sleep(1000 * time.Millisecond)
+		//延迟Interval毫秒
+		if int(config.Interval) > 0 {
+			time.Sleep(time.Duration(config.Interval) * time.Millisecond)
+		}
 	}
 
 	fmt.Printf("HPQ sync producer send succssful messages = %d, error messages = %d, duration = %dms.\n", succeed, errors, (time.Now().UnixNano()-timeBegin)/1e6)

@@ -7,6 +7,7 @@ Created At: 2020.11.15
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -17,7 +18,7 @@ import (
 	"github.com/Shopify/sarama"
 )
 
-func main() {
+func main1() {
 	flag.StringVar(&config.Brokers, "brokers", "localhost:9092", "Connect to Kafka brokers.")
 	flag.StringVar(&config.Topic, "topic", "testtopic", "Kafka topic.")
 	flag.StringVar(&config.Group, "group", "", "Kafka group.")
@@ -45,7 +46,7 @@ func ReadMessage() {
 	defer consumer.Close()
 
 	//partitionConsumer
-	partitionConsumer, err := consumer.ConsumePartition(config.Topic, 0, sarama.OffsetNewest)
+	partitionConsumer, err := consumer.ConsumePartition(config.Topic, 2, sarama.OffsetNewest)
 	if nil != err {
 		panic(err)
 	}
@@ -61,23 +62,23 @@ func ReadMessage() {
 	go func() {
 		for {
 			select {
-			case <-partitionConsumer.Messages():
+			/*
+				case <-partitionConsumer.Messages():
+					succeed++
+			*/
+			case msg := <-partitionConsumer.Messages():
 				succeed++
-				/*
-					case msg := <-partitionConsumer.Messages():
-						succeed++
-						fmt.Printf("HPQ consumer message, KEY=%s, VALUE=%s, offset=%d.\n", msg.Key, msg.Value, msg.Offset)
+				fmt.Printf("HPQ consumer message, KEY=%s, VALUE=%s, partition=%d, offset=%d.\n", msg.Key, msg.Value, msg.Partition, msg.Offset)
 
-						//Calculate OutputOHLC
-						var outputOHLC config.OutputOHLC
-						json.Unmarshal([]byte(msg.Value), &outputOHLC)
-						outputOHLC.O = 1.31136
-						outputOHLC.H = 1.31262
-						outputOHLC.L = 1.31118
-						outputOHLC.T = "M1"
-						outputStr, _ := json.Marshal(outputOHLC)
-						fmt.Println("OutputOHLC:", string(outputStr))
-				*/
+				//Calculate OutputOHLC
+				var outputOHLC config.OutputOHLC
+				json.Unmarshal([]byte(msg.Value), &outputOHLC)
+				outputOHLC.O = 1.31136
+				outputOHLC.H = 1.31262
+				outputOHLC.L = 1.31118
+				outputOHLC.T = "M1"
+				outputStr, _ := json.Marshal(outputOHLC)
+				fmt.Println("OutputOHLC:", string(outputStr))
 			case err := <-partitionConsumer.Errors():
 				errors++
 				fmt.Println("HPQ consumer error:", err)
