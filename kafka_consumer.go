@@ -1,5 +1,5 @@
 /*
-Function  : kafka_producer.go
+Function  : kafka_consumer.go
 Author	  : Gordon Wang
 Created At: 2020.11.15
 */
@@ -20,8 +20,11 @@ import (
 	"github.com/mohae/deepcopy"
 )
 
-//定义stockMap数据结构
-var stockMap = make(map[string]config.OHLC)
+//定义带互斥锁的stockMap数据结构
+var stockMap = struct {
+	sync.RWMutex
+	m map[string]config.OHLC
+}{m: make(map[string]config.OHLC)}
 
 func main() {
 	//Command line parameters
@@ -34,10 +37,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	//ReadOnePartition()
-	ReadMultiPartition()
+	ReadOnePartition()
+	//ReadMultiPartition()
 }
 
+//MultiPartition
 func ReadMultiPartition() {
 	fmt.Printf("HPQ consumer startup, brokers = %s, topic = %s.\n", config.Brokers, config.Topic)
 
@@ -86,6 +90,7 @@ func ReadMultiPartition() {
 	fmt.Printf("HPQ consumer read succssful messages = %d, error messages = %d, duration = %dms.\n", succeed, errors, (time.Now().UnixNano()-timeBegin)/1e6)
 }
 
+//OnePartition
 func ReadOnePartition() {
 	fmt.Printf("HPQ consumer startup, brokers = %s, topic = %s.\n", config.Brokers, config.Topic)
 
@@ -138,14 +143,16 @@ func ReadOnePartition() {
 2、map的协程安全处理
 */
 func quotation(msg *sarama.ConsumerMessage) {
-	fmt.Printf("HPQ consumer message, KEY=%s, VALUE=%s, partition=%d, offset=%d.\n", msg.Key, msg.Value, msg.Partition, msg.Offset)
+	//fmt.Printf("HPQ consumer message, KEY=%s, VALUE=%s, partition=%d, offset=%d.\n", msg.Key, msg.Value, msg.Partition, msg.Offset)
 
 	//获取该symbol的InputOHLC数据。
 	var inputOHLC config.InputOHLC
 	json.Unmarshal([]byte(msg.Value), &inputOHLC)
 
 	//查询stockMap中是否有该symbol值，找到的话，按照该symbol ask值进行10个时段的计算
-	stock, ok := stockMap[inputOHLC.S]
+	stockMap.RLock()
+	stock, ok := stockMap.m[inputOHLC.S]
+	stockMap.RUnlock()
 	if ok {
 		//计算M1数据
 		calculateOHLC(&inputOHLC, &stock.M1)
@@ -178,8 +185,10 @@ func quotation(msg *sarama.ConsumerMessage) {
 		calculateOHLC(&inputOHLC, &stock.MN)
 
 		//更新map
-		stockMap[inputOHLC.S] = stock
-		//fmt.Println(stockMap)
+		stockMap.Lock()
+		stockMap.m[inputOHLC.S] = stock
+		stockMap.Unlock()
+		//fmt.Println(stockMap.m)
 	} else {
 		//没有找到则初始化包含10个时间段的symbol，加入到stockMap中。
 		//构造10个时段的结构
@@ -229,8 +238,10 @@ func quotation(msg *sarama.ConsumerMessage) {
 		}
 
 		//插入到map中
-		stockMap[inputOHLC.S] = newOHLC
-		//fmt.Println(stockMap)
+		stockMap.Lock()
+		stockMap.m[inputOHLC.S] = newOHLC
+		stockMap.Unlock()
+		//fmt.Println(stockMap.m)
 	}
 }
 

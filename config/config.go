@@ -10,8 +10,9 @@ import "time"
 
 //Kafka parameters
 var (
-	Brokers  = "localhost:9092"
-	Topic    = "testtopic"
+	Brokers = "localhost:9092"
+	//Topic    = "testtopic"
+	Topic    = "hpqtopic"
 	Group    = ""
 	Interval = 100
 )
