@@ -33,7 +33,7 @@ func main() {
 	flag.StringVar(&config.Group, "group", "", "Kafka group.")
 	flag.Parse()
 	if 0 == len(config.Brokers) || 0 == len(config.Topic) {
-		fmt.Println("Usage: kafka_consumer -brokers host:port -topic topic -count count -interval interval")
+		fmt.Println("Usage: kafka_consumer -brokers host:port -topic topic -interval interval")
 		os.Exit(1)
 	}
 
@@ -140,7 +140,6 @@ func ReadOnePartition() {
 
 /*TODO:
 1、对一个stock的ask值进行10个时段的计算，可以使用10个goroutine分别计算性能更高。
-2、map的协程安全处理
 */
 func quotation(msg *sarama.ConsumerMessage) {
 	//fmt.Printf("HPQ consumer message, KEY=%s, VALUE=%s, partition=%d, offset=%d.\n", msg.Key, msg.Value, msg.Partition, msg.Offset)
@@ -155,7 +154,7 @@ func quotation(msg *sarama.ConsumerMessage) {
 	stockMap.RUnlock()
 	if ok {
 		//计算M1数据
-		calculateOHLC(&inputOHLC, &stock.M1)
+		calculateM1(&inputOHLC, &stock.M1)
 
 		//计算M5数据
 		calculateOHLC(&inputOHLC, &stock.M5)
@@ -167,7 +166,7 @@ func quotation(msg *sarama.ConsumerMessage) {
 		calculateOHLC(&inputOHLC, &stock.M30)
 
 		//计算H1数据
-		calculateOHLC(&inputOHLC, &stock.H1)
+		calculateH1(&inputOHLC, &stock.H1)
 
 		//计算H2数据
 		calculateOHLC(&inputOHLC, &stock.H2)
@@ -176,13 +175,13 @@ func quotation(msg *sarama.ConsumerMessage) {
 		calculateOHLC(&inputOHLC, &stock.H4)
 
 		//计算D1数据
-		calculateOHLC(&inputOHLC, &stock.D1)
+		calculateD1(&inputOHLC, &stock.D1)
 
 		//计算W1数据
 		calculateOHLC(&inputOHLC, &stock.W1)
 
 		//计算MN数据
-		calculateOHLC(&inputOHLC, &stock.MN)
+		calculateMN(&inputOHLC, &stock.MN)
 
 		//更新map
 		stockMap.Lock()
@@ -242,6 +241,42 @@ func quotation(msg *sarama.ConsumerMessage) {
 		stockMap.m[inputOHLC.S] = newOHLC
 		stockMap.Unlock()
 		//fmt.Println(stockMap.m)
+	}
+}
+
+//计算M1时段的OHLC
+func calculateM1(inputOHLC *config.InputOHLC, stock *config.OutputOHLC) {
+	//判断输入symbol时间是否符合当前时段
+	now := time.Now()
+	if (now.Year() == inputOHLC.U.Year()) && (now.Month() == inputOHLC.U.Month()) && (now.Day() == inputOHLC.U.Day()) && (now.Hour() == inputOHLC.U.Hour() && (now.Minute() == inputOHLC.U.Minute())) {
+		calculateOHLC(inputOHLC, stock)
+	}
+}
+
+//计算H1时段的OHLC
+func calculateH1(inputOHLC *config.InputOHLC, stock *config.OutputOHLC) {
+	//判断输入symbol时间是否符合当前时段
+	now := time.Now()
+	if (now.Year() == inputOHLC.U.Year()) && (now.Month() == inputOHLC.U.Month()) && (now.Day() == inputOHLC.U.Day()) && (now.Hour() == inputOHLC.U.Hour()) {
+		calculateOHLC(inputOHLC, stock)
+	}
+}
+
+//计算D1时段的OHLC
+func calculateD1(inputOHLC *config.InputOHLC, stock *config.OutputOHLC) {
+	//判断输入symbol时间是否符合当前时段
+	now := time.Now()
+	if (now.Year() == inputOHLC.U.Year()) && (now.Month() == inputOHLC.U.Month()) && (now.Day() == inputOHLC.U.Day()) {
+		calculateOHLC(inputOHLC, stock)
+	}
+}
+
+//计算MN时段的OHLC
+func calculateMN(inputOHLC *config.InputOHLC, stock *config.OutputOHLC) {
+	//判断输入symbol时间是否符合当前时段
+	now := time.Now()
+	if (now.Year() == inputOHLC.U.Year()) && (now.Month() == inputOHLC.U.Month()) {
+		calculateOHLC(inputOHLC, stock)
 	}
 }
 
