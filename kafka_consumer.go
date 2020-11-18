@@ -169,10 +169,10 @@ func quotation(msg *sarama.ConsumerMessage) {
 		calculateH1(&inputOHLC, &stock.H1)
 
 		//计算H2数据
-		calculateOHLC(&inputOHLC, &stock.H2)
+		calculateH2(&inputOHLC, &stock.H2)
 
 		//计算H4数据
-		calculateOHLC(&inputOHLC, &stock.H4)
+		calculateH4(&inputOHLC, &stock.H4)
 
 		//计算D1数据
 		calculateD1(&inputOHLC, &stock.D1)
@@ -258,6 +258,26 @@ func calculateH1(inputOHLC *config.InputOHLC, stock *config.OutputOHLC) {
 	//判断输入symbol时间是否符合当前时段
 	now := time.Now()
 	if (now.Year() == inputOHLC.U.Year()) && (now.Month() == inputOHLC.U.Month()) && (now.Day() == inputOHLC.U.Day()) && (now.Hour() == inputOHLC.U.Hour()) {
+		calculateOHLC(inputOHLC, stock)
+	}
+}
+
+//计算H2时段的OHLC,往前推一个小时，未考虑临界时间点。
+func calculateH2(inputOHLC *config.InputOHLC, stock *config.OutputOHLC) {
+	//判断输入symbol时间是否符合当前时段
+	now := time.Now()
+	if (now.Year() == inputOHLC.U.Year()) && (now.Month() == inputOHLC.U.Month()) && (now.Day() == inputOHLC.U.Day()) && ((now.Hour() == inputOHLC.U.Hour()) || (now.Hour()-1 == inputOHLC.U.Hour())) {
+		calculateOHLC(inputOHLC, stock)
+	}
+}
+
+//计算H4时段的OHLC,往前推一个小时，往后退2个小时，未考虑临界时间点。
+func calculateH4(inputOHLC *config.InputOHLC, stock *config.OutputOHLC) {
+	//判断输入symbol时间是否符合当前时段
+	now := time.Now()
+	hbegin := now.Hour() - 1
+	hend := now.Hour() + 2
+	if (now.Year() == inputOHLC.U.Year()) && (now.Month() == inputOHLC.U.Month()) && (now.Day() == inputOHLC.U.Day()) && (inputOHLC.U.Hour() >= hbegin) && (inputOHLC.U.Hour() <= hend) {
 		calculateOHLC(inputOHLC, stock)
 	}
 }
