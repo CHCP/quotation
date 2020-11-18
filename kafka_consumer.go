@@ -157,13 +157,13 @@ func quotation(msg *sarama.ConsumerMessage) {
 		calculateM1(&inputOHLC, &stock.M1)
 
 		//计算M5数据
-		calculateOHLC(&inputOHLC, &stock.M5)
+		calculateM5(&inputOHLC, &stock.M5)
 
 		//计算M15数据
-		calculateOHLC(&inputOHLC, &stock.M15)
+		calculateM15(&inputOHLC, &stock.M15)
 
 		//计算M30数据
-		calculateOHLC(&inputOHLC, &stock.M30)
+		calculateM30(&inputOHLC, &stock.M30)
 
 		//计算H1数据
 		calculateH1(&inputOHLC, &stock.H1)
@@ -250,6 +250,41 @@ func calculateM1(inputOHLC *config.InputOHLC, stock *config.OutputOHLC) {
 	now := time.Now()
 	if (now.Year() == inputOHLC.U.Year()) && (now.Month() == inputOHLC.U.Month()) && (now.Day() == inputOHLC.U.Day()) && (now.Hour() == inputOHLC.U.Hour() && (now.Minute() == inputOHLC.U.Minute())) {
 		calculateOHLC(inputOHLC, stock)
+	}
+}
+
+//计算M5时段的OHLC
+func calculateM5(inputOHLC *config.InputOHLC, stock *config.OutputOHLC) {
+	//判断输入symbol时间是否符合当前时段
+	now := time.Now()
+	i := int(now.Minute() / 5)
+	if (now.Year() == inputOHLC.U.Year()) && (now.Month() == inputOHLC.U.Month()) && (now.Day() == inputOHLC.U.Day()) && (now.Hour() == inputOHLC.U.Hour() && (inputOHLC.U.Minute() > i*5) && (inputOHLC.U.Minute() <= (i+1)*5)) {
+		calculateOHLC(inputOHLC, stock)
+	}
+}
+
+//计算M15时段的OHLC
+func calculateM15(inputOHLC *config.InputOHLC, stock *config.OutputOHLC) {
+	//判断输入symbol时间是否符合当前时段
+	now := time.Now()
+	i := int(now.Minute() / 15)
+	if (now.Year() == inputOHLC.U.Year()) && (now.Month() == inputOHLC.U.Month()) && (now.Day() == inputOHLC.U.Day()) && (now.Hour() == inputOHLC.U.Hour() && (inputOHLC.U.Minute() > i*15) && (inputOHLC.U.Minute() <= (i+1)*15)) {
+		calculateOHLC(inputOHLC, stock)
+	}
+}
+
+//计算M30时段的OHLC
+func calculateM30(inputOHLC *config.InputOHLC, stock *config.OutputOHLC) {
+	//判断输入symbol时间是否符合当前时段
+	now := time.Now()
+	if now.Minute() < 30 {
+		if (now.Year() == inputOHLC.U.Year()) && (now.Month() == inputOHLC.U.Month()) && (now.Day() == inputOHLC.U.Day()) && (now.Hour() == inputOHLC.U.Hour() && (inputOHLC.U.Minute() > 0) && (inputOHLC.U.Minute() <= 29)) {
+			calculateOHLC(inputOHLC, stock)
+		}
+	} else {
+		if (now.Year() == inputOHLC.U.Year()) && (now.Month() == inputOHLC.U.Month()) && (now.Day() == inputOHLC.U.Day()) && (now.Hour() == inputOHLC.U.Hour() && (inputOHLC.U.Minute() >= 30) && (inputOHLC.U.Minute() < 59)) {
+			calculateOHLC(inputOHLC, stock)
+		}
 	}
 }
 
