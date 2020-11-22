@@ -1,4 +1,4 @@
-module zerologix/quotation
+module quotation
 
 go 1.14
 

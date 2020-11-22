@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"quotation/config"
 	"strconv"
 	"time"
-	"zerologix/quotation/config"
 
 	"github.com/Shopify/sarama"
 )

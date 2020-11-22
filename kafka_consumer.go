@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"quotation/config"
 	"sync"
 	"time"
-	"zerologix/quotation/config"
 
 	"github.com/Shopify/sarama"
 	"github.com/mohae/deepcopy"
@@ -178,7 +178,7 @@ func quotation(msg *sarama.ConsumerMessage) {
 		calculateD1(&inputOHLC, &stock.D1)
 
 		//计算W1数据
-		calculateOHLC(&inputOHLC, &stock.W1)
+		calculateW1(&inputOHLC, &stock.W1)
 
 		//计算MN数据
 		calculateMN(&inputOHLC, &stock.MN)
@@ -324,6 +324,12 @@ func calculateD1(inputOHLC *config.InputOHLC, stock *config.OutputOHLC) {
 	if (now.Year() == inputOHLC.U.Year()) && (now.Month() == inputOHLC.U.Month()) && (now.Day() == inputOHLC.U.Day()) {
 		calculateOHLC(inputOHLC, stock)
 	}
+}
+
+//计算W1时段的OHLC
+func calculateW1(inputOHLC *config.InputOHLC, stock *config.OutputOHLC) {
+	//TODO: 判断输入symbol时间是否符合当前时段
+	calculateOHLC(inputOHLC, stock)
 }
 
 //计算MN时段的OHLC
