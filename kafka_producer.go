@@ -12,9 +12,10 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"quotation/config"
 	"strconv"
 	"time"
+
+	"quotation/config"
 
 	"github.com/Shopify/sarama"
 )

@@ -12,9 +12,10 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"quotation/config"
 	"sync"
 	"time"
+
+	"quotation/config"
 
 	"github.com/Shopify/sarama"
 	"github.com/mohae/deepcopy"
