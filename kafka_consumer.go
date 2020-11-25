@@ -27,7 +27,7 @@ var stockMap = struct {
 	m map[string]config.OHLC
 }{m: make(map[string]config.OHLC)}
 
-func main() {
+func main1() {
 	//Command line parameters
 	flag.StringVar(&config.Brokers, "brokers", "localhost:9092", "Connect to Kafka brokers.")
 	flag.StringVar(&config.Topic, "topic", "hpqtopic", "Kafka topic.")
