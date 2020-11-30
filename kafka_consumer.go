@@ -34,7 +34,7 @@ func main() {
 	flag.StringVar(&config.Group, "group", "", "Kafka group.")
 	flag.Parse()
 	if 0 == len(config.Brokers) || 0 == len(config.Topic) {
-		fmt.Println("Usage: kafka_consumer -brokers host:port -topic topic -interval interval")
+		fmt.Println("Usage: kafka_consumer -brokers host:port -topic topic")
 		os.Exit(1)
 	}
 
